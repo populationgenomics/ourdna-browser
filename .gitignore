@@ -129,6 +129,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env*
 .venv
 env/
 venv/
@@ -169,3 +170,36 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# macOS Finder Info
+**/.DS_Store
+
+# vscode settings
+**/.vscode/
+*.code-workspace
+
+# Terraform configuration
+**/*.tfvars
+**/*.tfvars.json
+**/*.auto.tfvars
+**/*.auto.tfvars.json
+**/*.hcl
+
+## Ignore Terraform CLI configuration files
+**/.terraform
+**/.terraform.d
+**/.terraformrc
+**/terraform.rc
+
+## Local .terraform directories
+**/.terraform/*
+
+## Terraform .tfstate files
+**/*.tfstate
+**/*.tfstate.*
+
+## Terraform crash log files
+**/crash.log
+**/crash.*.log
+

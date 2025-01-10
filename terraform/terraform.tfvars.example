@@ -1,0 +1,31 @@
+
+gke_node_pools = [
+    {
+      "pool_name"            = "main-pool"
+      "pool_num_nodes"       = 2
+      "pool_machine_type"    = "e2-standard-4"
+      "pool_preemptible"     = false
+      "pool_zone"            = ""
+      "pool_resource_labels" = {}
+    },
+    {
+      "pool_name"         = "redis"
+      "pool_num_nodes"    = 1
+      "pool_machine_type" = "e2-highmem-2"
+      "pool_preemptible"  = false
+      "pool_zone"         = ""
+      "pool_resource_labels" = {
+        "component" = "redis"
+      }
+    },
+    {
+      "pool_name"         = "es-data"
+      "pool_num_nodes"    = 2
+      "pool_machine_type" = "e2-standard-8"
+      "pool_preemptible"  = false
+      "pool_zone"         = ""
+      "pool_resource_labels" = {
+        "component" = "elasticsearch"
+      }
+    }
+  ]
