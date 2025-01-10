@@ -1,0 +1,12 @@
+project_id = "gnomad-dev"
+
+default_resource_region = "us-east1"
+
+default_resource_zone = "us-east1-c"
+
+deletion_protection = false
+
+authorized_networks = ["<cidr-range-1>", "<cidr-range-2>"]
+
+network_name_prefix = "gnomad"
+
