@@ -14,8 +14,8 @@ provider "kubernetes" {
 }
 
 module "gnomad-browser-vpc" {
-  source                  = "github.com/populationgenomics/tgg-terraform-modules/gnomad-vpc"
-  # vpc_sub_module_source   = "github.com/populationgenomics/tgg-terraform-modules/vpc-with-nat-subnet"
+  source                  = "github.com/broadinstitute/tgg-terraform-modules/gnomad-vpc"
+  # vpc_sub_module_source   = "github.com/broadinstitute/tgg-terraform-modules/vpc-with-nat-subnet"
   network_name_prefix     = var.network_name_prefix 
   # project_id              = var.project_id
 }
@@ -23,8 +23,8 @@ module "gnomad-browser-vpc" {
 
 
 module "gnomad-browser-infra" {
-  source                                = "github.com/populationgenomics/tgg-terraform-modules/gnomad-browser-infra"
-  # gke_sub_module_source                 = "github.com/populationgenomics/tgg-terraform-modules/private-gke-cluster"
+  source                                = "github.com/broadinstitute/tgg-terraform-modules/gnomad-browser-infra"
+  # gke_sub_module_source                 = "github.com/broadinstitute/tgg-terraform-modules/private-gke-cluster"
   infra_prefix                          = var.infra_prefix
   project_id                            = var.project_id
   # deletion_protection                   = var.deletion_protection
@@ -47,7 +47,7 @@ module "gnomad-browser-infra" {
 
 resource "google_artifact_registry_repository" "gnomad-browser" {
   location      = var.default_resource_region
-  repository_id = var.project_id
+  repository_id = "gnomad"
   description   = "gnomAD browser docker registry"
   format        = "DOCKER"
 

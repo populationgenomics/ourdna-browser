@@ -18,9 +18,9 @@ create .env file with all the env variables
 
 source .env
 
-create tf-state bucket
+create tf-remote-state bucket on GCP
 
-make tf-init
+make tf-init (will ask for the bucket name)
 
 make config
 
@@ -31,3 +31,46 @@ make gcloud-auth
 make tf-apply
 
 make kube-config
+
+make eck-create
+
+make eck-apply
+
+# wait a bit
+
+make eck-check
+
+kubectl port-forward service/gnomad-es-http 9200
+
+export ELASTICSEARCH_PASSWORD=$(make -s es-secret-get)
+
+make es-secret-create-zsh
+or make es-secret-create-bash
+
+# created edit 'browser/build.env' in gnomad-browser location
+update with the gnomad API url
+
+make docker
+
+make deploy-create
+
+make deploy-apply
+
+make deployments-list
+
+make ingress-apply
+
+make ingress-describe
+
+make ingress-get
+
+
+
+
+# to destroy all:
+make ingress-delete
+make deployments-local-clean
+make deployments-cluster-delete
+make es-secret-delete
+make tf-destroy
+
