@@ -10,7 +10,13 @@ Terraform folder contains infrastracture setup originally provided by [Garvan In
 
 makefile is work in progress file originally developed by [Garvan Institute of Medical Research](https://github.com/Garvan-Data-Science-Platform/gnomad-browser/blob/autism-crc-coverage/makefile)
 
+# Requirements
 
+python3
+
+terraform
+
+docker
 
 # Steps to setup
 

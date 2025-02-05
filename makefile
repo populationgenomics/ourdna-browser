@@ -1,3 +1,5 @@
+SHELL = /bin/bash
+
 # Makefile to make it easier to deploy gnomAD
 # This file was originally developed by Garvan team:
 # https://github.com/Garvan-Data-Science-Platform/gnomad-browser/blob/autism-crc-coverage/makefile
