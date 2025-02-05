@@ -6,9 +6,9 @@ SHELL = /bin/bash
 # It has been refactored to move all hardcoded variables to env variables
 
 # Here is the list of required ENV variables:
-
 PROJECT_ID:=$(PROJECT_ID)
 REGION:=$(REGION)
+READS_INSTANCE_NAME:=
 ZONE:=$(REGION)-a
 OUTPUT_BUCKET:=$(OUTPUT_BUCKET)
 CLUSTER_NAME:=$(CLUSTER_NAME)
@@ -16,13 +16,14 @@ SUBNET_NAME:=$(SUBNET_NAME)
 AUTOSCALING_POLICY_NAME:=$(AUTOSCALING_POLICY_NAME)
 ENVIRONMENT_TAG:=$(ENVIRONMENT_TAG)
 DOCKER_TAG:=$(DOCKER_TAG)
-DEPLOYMENT_STATE:=$(DEPLOYMENT_STATE)
-READS_INSTANCE_NAME:=$(READS_INSTANCE_NAME)
+DEPLOYMENT_STATE:=$(DEPLOYMENT_STATE)$(READS_INSTANCE_NAME)
 LOAD_NODE_POOL_SIZE:=$(LOAD_NODE_POOL_SIZE)
 READS_DISK_SIZE:=$(READS_DISK_SIZE)
 GCP_DOCKER_REGISTRY:=$(GCP_DOCKER_REGISTRY)
 GNOMAD_PROJECT_PATH:=$(GNOMAD_PROJECT_PATH)
 GNOMAD_DEPLOYMENTS_PROJECT_PATH:=$(GNOMAD_DEPLOYMENTS_PROJECT_PATH)
+SERVICE_ACCOUNT:=$(SERVICE_ACCOUNT)
+SERVICE_ACCOUNT_PKEY:=$(SERVICE_ACCOUNT_PKEY)
 
 
 ### Stand up infra
@@ -48,7 +49,7 @@ config-ls: ## Set deployctl config
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config list
 
 gcloud-auth: ## Authenticate with gcloud
-	gcloud auth login --project $(PROJECT_ID)
+	gcloud auth activate-service-account $(SERVICE_ACCOUNT) --key-file=$(SERVICE_ACCOUNT_PKEY) --project=$(PROJECT_ID)
 
 kube-config: ## Configure kubectl
 	gcloud container clusters get-credentials $(CLUSTER_NAME) \

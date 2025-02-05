@@ -18,6 +18,10 @@ terraform
 
 docker
 
+make
+
+service account on GCP with private key
+
 # Steps to setup
 
 create .env file with all the env variables
