@@ -26,6 +26,8 @@ service account on GCP with private key
 
 create .env file with all the env variables
 
+create terraform.tfvars in terraform folder (look at terraform.tfvars.example)
+
 source .env
 
 create tf-remote-state bucket on GCP

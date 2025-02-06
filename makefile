@@ -27,8 +27,11 @@ SERVICE_ACCOUNT_PKEY:=$(SERVICE_ACCOUNT_PKEY)
 
 
 ### Stand up infra
-tf-init: ## Create infrastructure
+tf-init: ## Initial terraform
 	terraform -chdir=./terraform init
+
+tf-plan: ## Show plan
+	terraform -chdir=./terraform plan
 
 tf-apply: ## Create infrastructure
 	terraform -chdir=./terraform apply
