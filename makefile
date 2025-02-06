@@ -36,6 +36,9 @@ tf-plan: ## Show plan
 tf-apply: ## Create infrastructure
 	terraform -chdir=./terraform apply
 
+tf-refresh: ## Sync infrastructure
+	terraform -chdir=./terraform refresh
+
 tf-destroy: ## Destroy infrastructure
 	terraform -chdir=./terraform destroy
 
