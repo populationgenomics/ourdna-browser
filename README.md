@@ -12,7 +12,7 @@ makefile is work in progress file originally developed by [Garvan Institute of M
 
 # Requirements
 
-python3
+python3 (minimum 3.8)
 
 terraform
 

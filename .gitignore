@@ -129,6 +129,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env*
 .venv
 env/
 venv/
@@ -176,6 +177,7 @@ cython_debug/
 
 # vscode settings
 **/.vscode/
+*.code-workspace
 
 # Terraform configuration
 **/*.tfvars
