@@ -77,7 +77,9 @@ eck-check:
 
 elastic-create:
 # 	# pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch apply --cluster-name=$(CLUSTER_NAME)
-	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch/base && kubectl apply -f .
+# 	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch/base && kubectl apply -f .
+	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build base | kubectl apply -f -
+
 
 # Cannot set env var in parent shell from within make
 es-secret-get:
