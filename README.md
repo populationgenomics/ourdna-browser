@@ -10,6 +10,8 @@ Terraform folder contains infrastracture setup originally provided by [Garvan In
 
 makefile is work in progress file originally developed by [Garvan Institute of Medical Research](https://github.com/Garvan-Data-Science-Platform/gnomad-browser/blob/autism-crc-coverage/makefile)
 
+Major challange is gnomad code contain a lot fo hardcoded strings, e.g. cluster name is always 'gnomad', the same name is used to create GCP buckets, but GCP buckets have to be unique across all the Google cloud.
+
 # Requirements
 
 python3 (minimum 3.8)
@@ -20,7 +22,12 @@ docker
 
 make
 
+kustomize (e.g snap install kustomize)
+
+gcloud: gke-gcloud-auth-plugin, kubectl
+
 service account on GCP with private key
+
 
 # Steps to setup
 
@@ -51,6 +58,14 @@ make eck-apply
 # wait a bit
 
 make eck-check
+
+# start ES server
+
+follow instructions on https://github.com/broadinstitute/gnomad-deployments/tree/main/elasticsearch
+kustomize build base
+kustomize build base | kubectl apply -f -
+
+wait a bit
 
 kubectl port-forward service/gnomad-es-http 9200
 

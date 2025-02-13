@@ -51,6 +51,7 @@ config: ## Set deployctl config
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set data_pipeline_output $(OUTPUT_BUCKET)
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set environment_tag "$(ENVIRONMENT_TAG)"
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set docker_registry $(GCP_DOCKER_REGISTRY)
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set cluster_name $(CLUSTER_NAME)
 
 config-ls: ## Set deployctl config
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config list
