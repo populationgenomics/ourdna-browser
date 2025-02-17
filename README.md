@@ -49,6 +49,8 @@ make gcloud-auth
 
 make tf-apply
 
+type 'yes' when prompted
+
 make kube-config
 
 make eck-create
@@ -61,21 +63,22 @@ make eck-check
 
 # start ES server
 
-follow instructions on https://github.com/broadinstitute/gnomad-deployments/tree/main/elasticsearch
-kustomize build base
-kustomize build base | kubectl apply -f -
+make elastic-create
+
+# more details here https://github.com/broadinstitute/gnomad-deployments/tree/main/elasticsearch
 
 wait a bit
 
-kubectl port-forward service/gnomad-es-http 9200
+make forward-es-http
 
 export ELASTICSEARCH_PASSWORD=$(make -s es-secret-get)
 
-make es-secret-create-zsh
-or make es-secret-create-bash
+make es-secret-create
 
 # created edit 'browser/build.env' in gnomad-browser location
 update with the gnomad API url
+
+echo 'GNOMAD_API_URL="https://ourdna-dev.popgen.rocks/api"' > $GNOMAD_PROJECT_PATH/browser/build.env
 
 make docker
 
@@ -87,14 +90,24 @@ make deployments-list
 
 make ingress-apply
 
+# TODO fix this one - different for DEV and PRD
 make ingress-describe
 
 make ingress-get
+
+# load data:
+
+
 
 
 
 
 # to destroy all:
+
+stop port frowarding:
+ps -ef | grep port-forward
+kill PID
+
 make ingress-delete
 make deployments-local-clean
 make deployments-cluster-delete

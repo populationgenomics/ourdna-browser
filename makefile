@@ -14,6 +14,8 @@ OUTPUT_BUCKET:=$(OUTPUT_BUCKET)
 CLUSTER_NAME:=$(CLUSTER_NAME)
 SUBNET_NAME:=$(SUBNET_NAME)
 AUTOSCALING_POLICY_NAME:=$(AUTOSCALING_POLICY_NAME)
+
+# dev or production if Empty string
 ENVIRONMENT_TAG:=$(ENVIRONMENT_TAG)
 DOCKER_TAG:=$(DOCKER_TAG)
 DEPLOYMENT_STATE:=$(DEPLOYMENT_STATE)$(READS_INSTANCE_NAME)
@@ -77,9 +79,12 @@ eck-check:
 	kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
 
 elastic-create:
-# 	# pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch apply --cluster-name=$(CLUSTER_NAME)
-# 	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch/base && kubectl apply -f .
-	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build base | kubectl apply -f -
+	ifeq($(ENVIRONMENT_TAG),dev)
+		pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build dev | kubectl apply -f -
+	else
+		pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build prod | kubectl apply -f -
+	endif
+
 
 forward-es-http:
 	kubectl port-forward service/gnomad-es-http 9200 &> /dev/null &
@@ -93,12 +98,12 @@ es-secret-get:
 # `-s` is silent (e.g. doesn't print recipe)
 # export ELASTICSEARCH_PASSWORD=$(make -s es-secret-get)
 
-es-secret-create-bash:
-	# if using bash
+es-secret-create:
+	# This is correct syntax if running under bash
 	echo -n $$ELASTICSEARCH_PASSWORD | gcloud secrets create gnomad-elasticsearch-password --data-file=- --locations=$(REGION) --replication-policy=user-managed
 
 es-secret-create-zsh:
-	# is using zsh
+	# if running using zsh needs different syntax
 	echo "$$ELASTICSEARCH_PASSWORD\c" | gcloud secrets create gnomad-elasticsearch-password --data-file=- --locations=$(REGION) --replication-policy=user-managed
 
 es-secret-delete:
@@ -129,8 +134,11 @@ ingress-apply:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl demo apply-ingress $(PROJECT_ID)-$(DEPLOYMENT_STATE)
 
 ingress-describe:
-	# kubectl describe ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
-	kubectl describe ingress gnomad-ingress-production-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
+	ifeq($(ENVIRONMENT_TAG),dev)
+		kubectl describe ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
+	else
+		kubectl describe ingress gnomad-ingress-production-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
+	endif
 
 ingress-get:
 	kubectl get ingress
