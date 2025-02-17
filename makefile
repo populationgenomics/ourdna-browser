@@ -58,6 +58,7 @@ config-ls: ## Set deployctl config
 
 gcloud-auth: ## Authenticate with gcloud
 	gcloud auth activate-service-account $(SERVICE_ACCOUNT) --key-file=$(SERVICE_ACCOUNT_PKEY) --project=$(PROJECT_ID)
+	gcloud auth configure-docker $(GCP_DOCKER_REGISTRY)
 
 kube-config: ## Configure kubectl
 	gcloud container clusters get-credentials $(CLUSTER_NAME) \
@@ -79,6 +80,9 @@ elastic-create:
 # 	# pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch apply --cluster-name=$(CLUSTER_NAME)
 # 	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch/base && kubectl apply -f .
 	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build base | kubectl apply -f -
+
+forward-es-http:
+	kubectl port-forward service/gnomad-es-http 9200 &> /dev/null &
 
 
 # Cannot set env var in parent shell from within make
