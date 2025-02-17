@@ -15,7 +15,7 @@ CLUSTER_NAME:=$(CLUSTER_NAME)
 SUBNET_NAME:=$(SUBNET_NAME)
 AUTOSCALING_POLICY_NAME:=$(AUTOSCALING_POLICY_NAME)
 
-# dev or production if Empty string
+# dev or prod
 ENVIRONMENT_TAG:=$(ENVIRONMENT_TAG)
 DOCKER_TAG:=$(DOCKER_TAG)
 DEPLOYMENT_STATE:=$(DEPLOYMENT_STATE)$(READS_INSTANCE_NAME)
@@ -79,13 +79,8 @@ eck-check:
 	kubectl -n elastic-system logs -f statefulset.apps/elastic-operator
 
 elastic-create:
-	ifeq($(ENVIRONMENT_TAG),dev)
-		pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build dev | kubectl apply -f -
-	else
-		pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build prod | kubectl apply -f -
-	endif
-
-
+	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build $(ENVIRONMENT_TAG) | kubectl apply -f -
+	
 forward-es-http:
 	kubectl port-forward service/gnomad-es-http 9200 &> /dev/null &
 
