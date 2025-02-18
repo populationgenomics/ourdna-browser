@@ -9,6 +9,7 @@ SHELL = /bin/bash
 PROJECT_ID:=$(PROJECT_ID)
 REGION:=$(REGION)
 READS_INSTANCE_NAME:=
+DOMAIN:=$(DOMAIN)
 ZONE:=$(REGION)-a
 OUTPUT_BUCKET:=$(OUTPUT_BUCKET)
 CLUSTER_NAME:=$(CLUSTER_NAME)
@@ -54,6 +55,7 @@ config: ## Set deployctl config
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set environment_tag "$(ENVIRONMENT_TAG)"
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set docker_registry $(GCP_DOCKER_REGISTRY)
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set cluster_name $(CLUSTER_NAME)
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config set domain $(DOMAIN)
 
 config-ls: ## Set deployctl config
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl config list
