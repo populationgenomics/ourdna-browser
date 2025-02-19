@@ -93,6 +93,7 @@ make ingress-apply
 # TODO fix this one - different for DEV and PRD
 make ingress-describe
 
+# wait for up to 5 minutes for IP to be allocated
 make ingress-get
 
 # load data:

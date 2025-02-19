@@ -29,6 +29,9 @@ SERVICE_ACCOUNT:=$(SERVICE_ACCOUNT)
 SERVICE_ACCOUNT_PKEY:=$(SERVICE_ACCOUNT_PKEY)
 GOOGLE_APPLICATION_CREDENTIALS:=$(SERVICE_ACCOUNT_PKEY)
 
+# loading ES specific, for DEV 1 is enough
+LOAD_NODE_POOL_SIZE:=$(LOAD_NODE_POOL_SIZE)
+
 
 ### Stand up infra
 tf-init: ## Initial terraform
@@ -153,5 +156,18 @@ deployments-cluster-delete:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl deployments delete $(PROJECT_ID)-$(DEPLOYMENT_STATE)
 	# we are not going to use reads for now
 	# pushd $(GNOMAD_PROJECT_PATH) && ./deployctl reads-deployments delete $(PROJECT_ID)-$(DEPLOYMENT_STATE)
+
+
+## Loading ES data ###
+es-dataproc-start:
+	./deployctl dataproc-cluster start es --num-preemptible-workers $(LOAD_NODE_POOL_SIZE) --service-account $(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com
+		
+es-secret-add:
+	gcloud secrets add-iam-policy-binding gnomad-elasticsearch-password \
+		--member="serviceAccount:$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com" \
+		--role="roles/secretmanager.secretAccessor"
+
+es-data-load:
+	./deployctl elasticsearch load-datasets --dataproc-cluster $(PROJECT_ID) gnomad_v4_exome_coverage --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)
 
 
