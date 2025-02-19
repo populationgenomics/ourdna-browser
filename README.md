@@ -98,10 +98,25 @@ make ingress-get
 
 # load data:
 
+Setup your favourite python environment
+
+pip install setuptools
+pip install -r $GNOMAD_PROJECT_PATH/data-pipeline/requirements.txt
 
 
+# Start dataproc cluster - this might take a while
+make es-dataproc-start   
 
 
+make es-secret-add
+
+# Have hail tables ready in $OUTPUT_BUCKET
+
+make DATASET=clinvar_grch38_variants es-load
+
+# review the loaded indexes
+
+make es-show-indices
 
 # to destroy all:
 
