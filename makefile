@@ -160,14 +160,16 @@ deployments-cluster-delete:
 
 ## Loading ES data ###
 es-dataproc-start:
-	./deployctl dataproc-cluster start es --num-preemptible-workers $(LOAD_NODE_POOL_SIZE) --service-account $(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl dataproc-cluster start es --num-preemptible-workers $(LOAD_NODE_POOL_SIZE) --service-account $(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com
 		
 es-secret-add:
 	gcloud secrets add-iam-policy-binding gnomad-elasticsearch-password \
 		--member="serviceAccount:$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com" \
 		--role="roles/secretmanager.secretAccessor"
 
-es-data-load:
-	./deployctl elasticsearch load-datasets --dataproc-cluster $(PROJECT_ID) gnomad_v4_exome_coverage --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)
+# I'm assuming DATASET refers to a `.ht` file in the datapipeline bucket
+# run with `make DATASET=gnomad_v2_exome_coverage es-load`
+es-load:
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --secret=gnomad-elasticsearch-password
 
 
