@@ -161,7 +161,10 @@ deployments-cluster-delete:
 ## Loading ES data ###
 es-dataproc-start:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl dataproc-cluster start es --num-preemptible-workers $(LOAD_NODE_POOL_SIZE) --service-account $(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com
-		
+	
+es-dataproc-stop:
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl dataproc-cluster stop es
+
 es-secret-add:
 	gcloud secrets add-iam-policy-binding gnomad-elasticsearch-password \
 		--member="serviceAccount:$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com" \
