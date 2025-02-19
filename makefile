@@ -186,6 +186,9 @@ es-make-alias:
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"add": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
 
+es-show-space:
+	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
+
 
 
 

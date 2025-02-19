@@ -118,6 +118,14 @@ make DATASET=clinvar_grch38_variants es-load
 
 make es-show-indices
 
+# show how much space on ES cluster
+make es-show-space
+
+
+# when done with loading shutdown ES loading dataproc cluster (to lower the cost)
+
+make es-dataproc-stop
+
 # to destroy all:
 
 stop port frowarding:
