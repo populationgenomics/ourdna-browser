@@ -57,7 +57,7 @@ make eck-create
 
 make eck-apply
 
-# wait a bit
+# wait a bit for container to start
 
 make eck-check
 
@@ -67,7 +67,7 @@ make elastic-create
 
 # more details here https://github.com/broadinstitute/gnomad-deployments/tree/main/elasticsearch
 
-wait a bit
+# wait a bit for ES VMs to be created
 
 make forward-es-http
 
@@ -113,4 +113,8 @@ make deployments-local-clean
 make deployments-cluster-delete
 make es-secret-delete
 make tf-destroy
+
+# check for any VM disks, which might be still present, esp. created by ES-create terraform
+
+
 

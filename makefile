@@ -65,8 +65,7 @@ gcloud-auth: ## Authenticate with gcloud
 	gcloud auth configure-docker $(GCP_DOCKER_REGISTRY)
 
 kube-config: ## Configure kubectl
-	gcloud container clusters get-credentials $(CLUSTER_NAME) \
-		    --region=$(ZONE)
+	gcloud container clusters get-credentials $(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --region=$(ZONE)
 
 
 ### Pre-Deployment ###
