@@ -14,8 +14,8 @@ Terraform folder contains infrastracture setup originally provided by [Garvan In
 
 makefile is work in progress file originally developed by [Garvan Institute of Medical Research](https://github.com/Garvan-Data-Science-Platform/gnomad-browser/blob/autism-crc-coverage/makefile)
 
-Major challange is gnomAD code contains a lot fo hardcoded strings, e.g. cluster name is always 'gnomad', the same name is used to create GCP buckets, but GCP buckets have to be unique across all the Google cloud.
-This repository is trying to address those things, using environmental variables where possible.
+Major challange is gnomAD code contains a lot of hardcoded strings, e.g. cluster name is always 'gnomad', the same name is used to create GCP buckets, but GCP buckets have to be unique across all the Google cloud.
+This repository is trying to address those things, using environment variables where possible.
 
 
 
@@ -171,7 +171,7 @@ pip install -r $GNOMAD_PROJECT_PATH/data-pipeline/requirements.txt
 make es-dataproc-start   
 ```
 
-- Add service account enough permissions to use ES secrets 
+- Add permissions to existing data-pipeline service account so it can access ES secrets 
 ```
 make es-secret-add
 ```
