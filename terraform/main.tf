@@ -17,7 +17,7 @@ module "gnomad-browser-vpc" {
   source                  = "github.com/populationgenomics/tgg-terraform-modules/gnomad-vpc"
   # vpc_sub_module_source   = "github.com/populationgenomics/tgg-terraform-modules/vpc-with-nat-subnet"
   network_name_prefix     = var.network_name_prefix 
-  project_id              = var.project_id
+  # project_id              = var.project_id
 }
 
 
