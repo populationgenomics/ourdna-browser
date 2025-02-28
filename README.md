@@ -234,3 +234,12 @@ make tf-destroy
 
 
 
+
+## How to setup github action to enable CI
+
+TODO !!!
+
+Details [here](https://docs.github.com/en/actions/use-cases-and-examples/deploying/deploying-to-google-kubernetes-engine#configuring-a-service-account-and-storing-its-credentials)
+
+
+
