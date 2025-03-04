@@ -193,5 +193,13 @@ es-show-space:
 	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
 
 
+del-es-index:
+	kubectl exec --stdin --tty gnomad-dev-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X DELETE "localhost:9200/$(INDEX_NAME)?pretty"
+
+del-es-alias:
+	kubectl exec --stdin --tty gnomad-dev-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPOST http://localhost:9200/_aliases \
+		--header "Content-Type: application/json" \
+		--data '{"actions": [{"remove": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
 
 
