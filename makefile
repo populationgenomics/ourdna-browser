@@ -175,31 +175,46 @@ es-secret-add:
 es-load:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --secret=gnomad-elasticsearch-password
 
+es-show-info:
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200
 
 es-show-aliases:
-	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/aliases
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/aliases
 
 es-show-indices:
-	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/indices
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/indices
 
 # Need INDEX_NAME and ALIAS_NAME as env vars
 es-make-alias:
-	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPOST http://localhost:9200/_aliases \
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"add": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
 
 es-show-space:
-	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
 
 
 del-es-index:
-	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X DELETE "localhost:9200/$(INDEX_NAME)?pretty"
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X DELETE "localhost:9200/$(INDEX_NAME)?pretty"
 
 del-es-alias:
-	kubectl exec --stdin --tty gnomad-es-master-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPOST http://localhost:9200/_aliases \
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"remove": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
+
+es-alias-search-by-kv:
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query":{"match":{"$(SEARCH_KEY)": "$(SEARCH_VALUE)"}}}'
+
+
+es-alias-search-by-exome:
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query": {"exists": {"field": "value.exome"}}}'
+
+
+es-alias-show-all:
+	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"aggs" : {"whatever_you_like_here" : {"terms" : { "field" : "$(SEARCH_KEY)", "size":10000 }}},"size" : 0}'
+
+
 
 
