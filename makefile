@@ -31,6 +31,7 @@ GOOGLE_APPLICATION_CREDENTIALS:=$(SERVICE_ACCOUNT_PKEY)
 
 # loading ES specific, for DEV 1 is enough
 LOAD_NODE_POOL_SIZE:=$(LOAD_NODE_POOL_SIZE)
+ES_MASTER_NODE:=$(ES_MASTER_NODE)
 
 
 ### Stand up infra
@@ -84,7 +85,10 @@ eck-check:
 
 elastic-create:
 	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/elasticsearch && kustomize build $(ENVIRONMENT_TAG) | kubectl apply -f -
-	
+
+redis-create:
+	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/redis && kustomize build $(ENVIRONMENT_TAG) | kubectl apply -f -
+
 forward-es-http:
 	kubectl port-forward service/gnomad-es-http 9200 &> /dev/null &
 
@@ -176,45 +180,79 @@ es-load:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --secret=gnomad-elasticsearch-password
 
 es-show-info:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200
 
 es-show-aliases:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/aliases
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/aliases
 
 es-show-indices:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/indices
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200/_cat/indices
 
 # Need INDEX_NAME and ALIAS_NAME as env vars
 es-make-alias:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPOST http://localhost:9200/_aliases \
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"add": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
 
 es-show-space:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
-
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
 
 del-es-index:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X DELETE "localhost:9200/$(INDEX_NAME)?pretty"
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X DELETE "localhost:9200/$(INDEX_NAME)?pretty"
 
 del-es-alias:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPOST http://localhost:9200/_aliases \
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"remove": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
 
 es-alias-search-by-kv:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query":{"match":{"$(SEARCH_KEY)": "$(SEARCH_VALUE)"}}}'
-
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query":{"match":{"$(SEARCH_KEY)": "$(SEARCH_VALUE)"}}}'
 
 es-alias-search-by-exome:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query": {"exists": {"field": "value.exome"}}}'
-
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query": {"exists": {"field": "value.exome"}}}'
 
 es-alias-show-all:
-	kubectl exec --stdin --tty gnomad-es-default-0 -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"aggs" : {"whatever_you_like_here" : {"terms" : { "field" : "$(SEARCH_KEY)", "size":10000 }}},"size" : 0}'
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"aggs" : {"whatever_you_like_here" : {"terms" : { "field" : "$(SEARCH_KEY)", "size":10000 }}},"size" : 0}'
 
+es-show-nodes:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/nodes?v&pretty"
 
+es-show-alloc:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/allocation?v"
+
+es-show-tasks:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_tasks?actions=*&detailed"
+
+es-show-node-info:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_nodes/gnomad-es-data-green-1"
+
+es-show-state:
+	kubectl get -o yaml es
+
+es-show-health:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cluster/health"
+
+es-nodes-stats:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_nodes/stats"
+
+es-show-cluster-state:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cluster/stats"
+
+es-stop-node-shutdown:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X DELETE "localhost:9200/_nodes/gnomad-es-data-green-1/shutdown"
+
+es-show-plugins:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/plugins?v"
+
+es-show-indices-by-node:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/shards?v=true&h=node,index&s=node&index=*"
+
+es-move-index:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/_cluster/reroute" -H 'Content-Type: application/json' -d'{"commands": [{"move": {"index": "$(INDEX_NAME)", "shard": 0,"from_node": "$(SOURCE_NODE)", "to_node": "$(TARGET_NODE)"}}]}'
+
+es-show-move-index-status:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/recovery/$(INDEX_NAME)?format=json&h=index,shard,time,type,stage,source_node,target_node,bytes_percent"
 
 
