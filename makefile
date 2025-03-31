@@ -216,6 +216,9 @@ es-alias-search-by-exome:
 es-alias-show-all:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"aggs" : {"whatever_you_like_here" : {"terms" : { "field" : "$(SEARCH_KEY)", "size":10000 }}},"size" : 0}'
 
+es-alias-show-mapping:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X GET "localhost:9200/$(ALIAS_NAME)/_all/_mapping" -H 'Content-Type: application/json'
+
 es-show-nodes:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/nodes?v&pretty"
 
@@ -255,4 +258,5 @@ es-move-index:
 es-show-move-index-status:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET "localhost:9200/_cat/recovery/$(INDEX_NAME)?format=json&h=index,shard,time,type,stage,source_node,target_node,bytes_percent"
 
-
+data-pipeline-run:
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl data-pipeline run genes --cluster es
