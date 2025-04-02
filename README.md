@@ -98,6 +98,11 @@ more details [here](https://github.com/broadinstitute/gnomad-deployments/tree/ma
 make elastic-create
 ```
 
+- Create Redis server
+```
+make redis-create
+```
+
 - Wait a bit for ES disks to be created
 - Forward ES port so we can talk to it
 ```
