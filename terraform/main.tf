@@ -57,4 +57,14 @@ resource "google_artifact_registry_repository" "gnomad-browser" {
   docker_config {
     immutable_tags = true
   }
+
+  cleanup_policies {
+    action = "KEEP"
+    id     = "Keep last 3 only"
+
+    most_recent_versions {
+        keep_count            = 3
+        package_name_prefixes = []
+    }
+  }
 }
