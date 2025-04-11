@@ -15,7 +15,7 @@ provider "kubernetes" {
 
 # Source for this terraform module is in the private repo
 module "ourdna-browser-armor-policy" {
-  source                  = "github.com/populationgenomics/ourdna-browser-private/cloud-armor-policy"
+  source                  = "git::git@github.com:populationgenomics/ourdna-browser-private.git//cloud-armor-policy"
 }
 
 module "gnomad-browser-vpc" {
