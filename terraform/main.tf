@@ -13,14 +13,17 @@ provider "kubernetes" {
   )
 }
 
+# Source for this terraform module is in the private repo
+module "ourdna-browser-armor-policy" {
+  source                  = "github.com/populationgenomics/ourdna-browser-private/cloud-armor-policy"
+}
+
 module "gnomad-browser-vpc" {
   source                  = "github.com/populationgenomics/tgg-terraform-modules/gnomad-vpc"
   # vpc_sub_module_source   = "github.com/populationgenomics/tgg-terraform-modules/vpc-with-nat-subnet"
   network_name_prefix     = var.network_name_prefix 
   # project_id              = var.project_id
 }
-
-
 
 module "gnomad-browser-infra" {
   source                                = "github.com/populationgenomics/tgg-terraform-modules/gnomad-browser-infra"
