@@ -89,6 +89,9 @@ elastic-create:
 redis-create:
 	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/redis && kustomize build $(ENVIRONMENT_TAG) | kubectl apply -f -
 
+blog-create:
+	pushd $(GNOMAD_DEPLOYMENTS_PROJECT_PATH)/blog && kustomize build $(ENVIRONMENT_TAG) | kubectl apply -f -
+
 forward-es-http:
 	kubectl port-forward service/gnomad-es-http 9200 &> /dev/null &
 
@@ -134,11 +137,11 @@ deployments-list:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl deployments list
 
 ingress-apply:
-	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl demo apply-ingress $(PROJECT_ID)-$(DEPLOYMENT_STATE)
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl ingress apply-ingress --browser-deployment $(PROJECT_ID)-$(DEPLOYMENT_STATE) --env $(ENVIRONMENT_TAG)
 
 ingress-describe:
 	ifeq($(ENVIRONMENT_TAG),dev)
-		kubectl describe ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
+		kubectl describe ingress gnomad-ingress-dev-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
 	else
 		kubectl describe ingress gnomad-ingress-production-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
 	endif

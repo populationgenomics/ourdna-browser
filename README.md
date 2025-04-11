@@ -142,6 +142,9 @@ make deployments-list
 ```
 
 - Setup Ingress (TODO get static IP address working):
+This step requires policy 'deny-problematic-requests' Cloud Armor policy to be present before running the next step
+https://stackoverflow.com/questions/68944745/is-there-a-workaround-to-attach-a-cloud-armor-policy-to-a-load-balancer-created
+
 ```
 make ingress-apply
 ```
