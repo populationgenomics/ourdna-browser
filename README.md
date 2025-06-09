@@ -98,6 +98,11 @@ more details [here](https://github.com/broadinstitute/gnomad-deployments/tree/ma
 make elastic-create
 ```
 
+- Create Redis server
+```
+make redis-create
+```
+
 - Wait a bit for ES disks to be created
 - Forward ES port so we can talk to it
 ```
@@ -137,6 +142,9 @@ make deployments-list
 ```
 
 - Setup Ingress (TODO get static IP address working):
+This step requires policy 'deny-problematic-requests' Cloud Armor policy to be present before running the next step
+https://stackoverflow.com/questions/68944745/is-there-a-workaround-to-attach-a-cloud-armor-policy-to-a-load-balancer-created
+
 ```
 make ingress-apply
 ```
@@ -231,6 +239,3 @@ make tf-destroy
 ```
 
 - Check for any VM disks, which might be still present, esp. created by ES-create terraform
-
-
-
