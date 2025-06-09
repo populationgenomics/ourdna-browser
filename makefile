@@ -115,6 +115,22 @@ es-secret-create-zsh:
 es-secret-delete:
 	gcloud secrets delete gnomad-elasticsearch-password
 
+external-security-add:
+	curl "https://raw.githubusercontent.com/external-secrets/external-secrets/v0.16.1/deploy/crds/bundle.yaml" | kubectl apply -f -
+
+
+
+# OAUTH for blog
+oauth-secret-create-zsh:
+	echo "$$OAUTH_REC\c" | gcloud secrets create gke-blog-sso-oauth --data-file=- --locations=$(REGION) --replication-policy=user-managed
+	# echo "$$OAUTH_REC\c" | kubectl create secret generic gke-blog-sso-oauth -f -
+
+blog-es-secret-add:
+	gcloud secrets add-iam-policy-binding gke-blog-sso-oauth \
+		--member="serviceAccount:$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com" \
+		--role="roles/secretmanager.secretAccessor"
+
+
 ### Deployment ###
 
 docker:
