@@ -239,28 +239,3 @@ make tf-destroy
 ```
 
 - Check for any VM disks, which might be still present, esp. created by ES-create terraform
-
-
-
-
-## How to setup github action to enable CI
-
-TODO !!!
-
-Details [here](https://docs.github.com/en/actions/use-cases-and-examples/deploying/deploying-to-google-kubernetes-engine#configuring-a-service-account-and-storing-its-credentials)
-
-Setup SA
-
-gcloud projects add-iam-policy-binding ourdna-browser \
-  --member=serviceAccount:github-deploy@ourdna-browser.iam.gserviceaccount.com \
-  --role=roles/container.admin
-gcloud projects add-iam-policy-binding ourdna-browser \
-  --member=serviceAccount:github-deploy@ourdna-browser.iam.gserviceaccount.com \
-  --role=roles/storage.admin
-gcloud projects add-iam-policy-binding ourdna-browser \
-  --member=serviceAccount:github-deploy@ourdna-browser.iam.gserviceaccount.com \
-  --role=roles/container.clusterViewer
-
-
-
-
