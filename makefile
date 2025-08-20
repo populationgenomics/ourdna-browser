@@ -155,10 +155,7 @@ ingress-apply:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl ingress apply-ingress --browser-deployment $(PROJECT_ID)-$(DEPLOYMENT_STATE) --env $(ENVIRONMENT_TAG)
 
 ingress-describe:
-	@if [ "$(ENVIRONMENT_TAG)" = "dev" ]; \
-		then kubectl describe ingress gnomad-ingress-dev-$(PROJECT_ID)-$(DEPLOYMENT_STATE); \
-		else kubectl describe ingress gnomad-ingress-production-$(PROJECT_ID)-$(DEPLOYMENT_STATE); \
-	fi
+	kubectl describe ingress gnomad-ingress
 
 ingress-get:
 	kubectl get ingress
@@ -192,12 +189,24 @@ es-secret-add:
 		--role="roles/secretmanager.secretAccessor"
 
 
-# ES backup
+# ES backup / restore
 es-setup-backup:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
 		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true }}'
+
+es-setup-backup-readonly:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPUT "localhost:9200/_snapshot/backups" \
+		-H 'Content-Type: application/json' \
+		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true, "readonly": true }}'
+
+
+# This does not remove the content of the bucket, only deregister from the ES
+es-deregister-backup:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XDELETE "localhost:9200/_snapshot/backups" 
+
 
 es-start-backup:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
@@ -211,9 +220,18 @@ es-backup-details:
 
 es-restore-idx:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
-		-X POST "localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)/_restore?wait_for_completion=true&pretty" \
+		-X POST "localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)/_restore?wait_for_completion=false&pretty" \
 		-H 'Content-Type: application/json' \
 		-d '{ "indices": "$(INDEX_NAME)", "index_settings": { "index.number_of_replicas": 0 }, "include_global_state": false, "rename_pattern": "(.+)", "rename_replacement": "restored-$(INDEX_NAME)", "include_aliases": false }'
+
+es-restore-all:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-X POST "localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)/_restore?wait_for_completion=false&pretty" \
+		-H 'Content-Type: application/json' \
+		-d '{ "indices": "*", "index_settings": { "index.number_of_replicas": 0 }, "include_global_state": false, "rename_pattern": "(.+)", "include_aliases": false }'
+
+es-restore-details:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" http://localhost:9200/_cat/recovery
 
 es-del-backup:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XDELETE http://localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)
@@ -251,6 +269,12 @@ del-es-alias:
 		-XPOST http://localhost:9200/_aliases \
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"remove": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
+
+es-empty-index:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPUT "localhost:9200/$(INDEX_NAME)?pretty" \
+		--header "Content-Type: application/json" \
+		--data '{"settings": {"number_of_shards": 1, "number_of_replicas": 0}}'
 
 es-alias-search-by-kv:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query":{"match":{"$(SEARCH_KEY)": "$(SEARCH_VALUE)"}}}'
