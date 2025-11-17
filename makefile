@@ -71,7 +71,6 @@ gcloud-auth: ## Authenticate with gcloud
 kube-config: ## Configure kubectl
 	gcloud container clusters get-credentials $(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --region=$(ZONE)
 
-
 ### Pre-Deployment ###
 
 eck-create:
@@ -156,11 +155,7 @@ ingress-apply:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl ingress apply-ingress --browser-deployment $(PROJECT_ID)-$(DEPLOYMENT_STATE) --env $(ENVIRONMENT_TAG)
 
 ingress-describe:
-	ifeq($(ENVIRONMENT_TAG),dev)
-		kubectl describe ingress gnomad-ingress-dev-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
-	else
-		kubectl describe ingress gnomad-ingress-production-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
-	endif
+	kubectl describe ingress gnomad-ingress
 
 ingress-get:
 	kubectl get ingress
@@ -192,6 +187,55 @@ es-secret-add:
 	gcloud secrets add-iam-policy-binding gnomad-elasticsearch-password \
 		--member="serviceAccount:$(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com" \
 		--role="roles/secretmanager.secretAccessor"
+
+
+# ES backup / restore
+es-setup-backup:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPUT "localhost:9200/_snapshot/backups" \
+		-H 'Content-Type: application/json' \
+		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true }}'
+
+es-setup-backup-readonly:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPUT "localhost:9200/_snapshot/backups" \
+		-H 'Content-Type: application/json' \
+		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true, "readonly": true }}'
+
+
+# This does not remove the content of the bucket, only deregister from the ES
+es-deregister-backup:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XDELETE "localhost:9200/_snapshot/backups" 
+
+
+es-start-backup:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPUT "http://localhost:9200/_snapshot/backups/%3Csnapshot-%7Bnow%7BYYYY.MM.dd.HH.mm%7D%7D%3E"
+
+es-ls-backups:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" http://localhost:9200/_snapshot/backups/_all | jq ".snapshots[].snapshot"
+
+es-backup-details:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" http://localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)/_status | jq ".snapshots[0]"
+
+es-restore-idx:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-X POST "localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)/_restore?wait_for_completion=false&pretty" \
+		-H 'Content-Type: application/json' \
+		-d '{ "indices": "$(INDEX_NAME)", "index_settings": { "index.number_of_replicas": 0 }, "include_global_state": false, "rename_pattern": "(.+)", "rename_replacement": "restored-$(INDEX_NAME)", "include_aliases": false }'
+
+es-restore-all:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-X POST "localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)/_restore?wait_for_completion=false&pretty" \
+		-H 'Content-Type: application/json' \
+		-d '{ "indices": "*", "index_settings": { "index.number_of_replicas": 0 }, "include_global_state": false, "rename_pattern": "(.+)", "include_aliases": false }'
+
+es-restore-details:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" http://localhost:9200/_cat/recovery
+
+es-del-backup:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XDELETE http://localhost:9200/_snapshot/backups/$(SNAPSHOT_NAME)
+
 
 # I'm assuming DATASET refers to a `.ht` file in the datapipeline bucket
 # run with `make DATASET=gnomad_v2_exome_coverage es-load`
@@ -226,6 +270,12 @@ del-es-alias:
 		--header "Content-Type: application/json" \
 		--data '{"actions": [{"remove": {"index": "$(INDEX_NAME)", "alias": "$(ALIAS_NAME)"}}]}'
 
+es-empty-index:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
+		-XPUT "localhost:9200/$(INDEX_NAME)?pretty" \
+		--header "Content-Type: application/json" \
+		--data '{"settings": {"number_of_shards": 1, "number_of_replicas": 0}}'
+
 es-alias-search-by-kv:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"query":{"match":{"$(SEARCH_KEY)": "$(SEARCH_VALUE)"}}}'
 
@@ -234,6 +284,12 @@ es-alias-search-by-exome:
 
 es-alias-show-all:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"aggs" : {"whatever_you_like_here" : {"terms" : { "field" : "$(SEARCH_KEY)", "size":10000 }}},"size" : 0}'
+
+es-alias-show-top-records:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"size" : $(SEARCH_NO), "query": {"match_all": {}}}'
+
+es-alias-show-records-with-fields:
+	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X POST "localhost:9200/$(ALIAS_NAME)/_search" -H 'Content-Type: application/json' -d'{"size" : $(SEARCH_NO), "query": {"match_all": {}, "fields": ["$(SEARCH_FIELDS)"] }}'
 
 es-alias-show-mapping:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -X GET "localhost:9200/$(ALIAS_NAME)/_all/_mapping" -H 'Content-Type: application/json'
@@ -279,3 +335,19 @@ es-show-move-index-status:
 
 data-pipeline-run:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl data-pipeline run genes --cluster es
+
+redis-flush:
+	kubectl exec --stdin --tty redis-0 -- redis-cli FLUSHALL
+
+
+## Preparing ClinVar data ###
+vep-dataproc-start:
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl dataproc-cluster start vep105 --service-account $(CLUSTER_NAME)-$(ENVIRONMENT_TAG)-data-pipeline@$(PROJECT_ID).iam.gserviceaccount.com --init "gs://gcp-public-data--gnomad/resources/vep/v105/vep105-init.sh" --metadata "VEP_CONFIG_PATH=/vep_data/vep-gcloud.json,VEP_CONFIG_URI=file:///vep_data/vep-gcloud.json,VEP_REPLICATE=us" --master-machine-type n1-highmem-8 --worker-machine-type n1-highmem-8 --worker-boot-disk-size=200 --secondary-worker-boot-disk-size=200 --num-secondary-workers 16
+
+vep-dataproc-stop:
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl dataproc-cluster stop vep105
+
+vep-data-pipeline-run:
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl data-pipeline run --cluster vep105 clinvar_grch38
+
+
