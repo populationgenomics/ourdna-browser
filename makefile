@@ -37,7 +37,7 @@ ES_BACKUP_BUCKET:=$(ES_BACKUP_BUCKET)
 
 ### Stand up infra
 tf-init: ## Initial terraform
-	terraform -chdir=./terraform init
+	terraform -chdir=./terraform init -backend-config=backend.hcl
 
 tf-plan: ## Show plan
 	terraform -chdir=./terraform plan
