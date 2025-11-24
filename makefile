@@ -32,6 +32,7 @@ GOOGLE_APPLICATION_CREDENTIALS:=$(SERVICE_ACCOUNT_PKEY)
 # loading ES specific, for DEV 1 is enough
 LOAD_NODE_POOL_SIZE:=$(LOAD_NODE_POOL_SIZE)
 ES_MASTER_NODE:=$(ES_MASTER_NODE)
+ES_BACKUP_BUCKET:=$(ES_BACKUP_BUCKET)
 
 
 ### Stand up infra
@@ -194,13 +195,13 @@ es-setup-backup:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
-		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true }}'
+		--data '{"type": "gcs", "settings": { "bucket": $(ES_BACKUP_BUCKET), "client": "default", "compress": true }}'
 
 es-setup-backup-readonly:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
-		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true, "readonly": true }}'
+		--data '{"type": "gcs", "settings": { "bucket": $(ES_BACKUP_BUCKET), "client": "default", "compress": true, "readonly": true }}'
 
 
 # This does not remove the content of the bucket, only deregister from the ES
