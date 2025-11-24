@@ -97,7 +97,7 @@ forward-es-http:
 
 # Cannot set env var in parent shell from within make
 es-secret-get:
-	$(GNOMAD_PROJECT_PATH)/deployctl elasticsearch get-password --cluster-name=$(CLUSTER_NAME)
+	$(GNOMAD_PROJECT_PATH)/deployctl elasticsearch get-password
 
 # bash command to set env var with password
 # `-s` is silent (e.g. doesn't print recipe)
@@ -240,7 +240,7 @@ es-del-backup:
 # I'm assuming DATASET refers to a `.ht` file in the datapipeline bucket
 # run with `make DATASET=gnomad_v2_exome_coverage es-load`
 es-load:
-	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --secret=gnomad-elasticsearch-password
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --secret=gnomad-elasticsearch-password
 
 es-show-info:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200
