@@ -164,7 +164,7 @@ ingress-get:
 ### Clean up deployment ###
 ingress-delete:
 	# kubectl delete ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
-	kubectl delete ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE) 
+	kubectl delete ingress gnomad-ingress 
 
 deployments-local-clean:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl deployments clean $(PROJECT_ID)-$(DEPLOYMENT_STATE)
@@ -195,13 +195,13 @@ es-setup-backup:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
-		--data '{"type": "gcs", "settings": { "bucket": $(ES_BACKUP_BUCKET), "client": "default", "compress": true }}'
+		--data '{"type": "gcs", "settings": { "bucket": "$(ES_BACKUP_BUCKET)", "client": "default", "compress": true }}'
 
 es-setup-backup-readonly:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
-		--data '{"type": "gcs", "settings": { "bucket": $(ES_BACKUP_BUCKET), "client": "default", "compress": true, "readonly": true }}'
+		--data '{"type": "gcs", "settings": { "bucket": "$(ES_BACKUP_BUCKET)", "client": "default", "compress": true, "readonly": true }}'
 
 
 # This does not remove the content of the bucket, only deregister from the ES
