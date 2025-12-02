@@ -209,7 +209,7 @@ make es-dataproc-start
 make es-secret-add
 ```
 
-7. Load your dataset.
+5. Load your dataset.
 
 First, you must have hail tables ready in `$OUTPUT_BUCKET`. 
 
@@ -218,7 +218,7 @@ Then run the following command:
 make DATASET=genes_grch38 es-load
 ```
 
-8. Review the loaded indexes.
+6. Review the loaded indexes.
 
 This requires `ES_MASTER_NODE` to be set in .env.
 You can run `kubectl get pods` to see what to use - the pod will be named something like `gnomad-es-master-0`.
@@ -228,12 +228,12 @@ Afterwards, run the following command to view the loaded indices:
 make es-show-indices
 ```
 
-9. Show how much space on ES cluster:
+7. Show how much space on ES cluster:
 ```
 make es-show-space
 ```
 
-10. When done with loading shutdown ES loading dataproc cluster (to lower the cost), it will shutdown itself after hour on inactivity
+8. When done with loading shutdown ES loading dataproc cluster (to lower the cost), it will shutdown itself after hour on inactivity
 
 ```
 make es-dataproc-stop
