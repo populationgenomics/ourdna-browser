@@ -184,8 +184,8 @@ make ingress-get
 You should see an address under the `ADDRESS` column:
 ```
 kubectl get ingress
-NAME             CLASS    HOSTS                     ADDRESS         PORTS   AGE
-gnomad-ingress   <none>   *                         34.36.115.66    80      39m
+NAME             CLASS    HOSTS     ADDRESS         PORTS   AGE
+gnomad-ingress   <none>   *         34.36.115.66    80      39m
 ```
 
 
