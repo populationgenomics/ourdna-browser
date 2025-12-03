@@ -35,8 +35,6 @@ This repository is trying to address those things, using environment variables w
 
 -  service account on GCP with private key
 
--  Google bucket where terraform state is going to be stored (tf-remote-state)
-
 ## Before starting
 ### Google Cloud
 
@@ -56,36 +54,44 @@ Make the following changes to the `.env` file:
 
 ## Setting Up OurDNA Browser Infrastracture
 
-1. Create .env file with all the env variables (look at `example.env`)
+1. Create .env file with all the env variables (look at `example.env`).
 
-2. Create `terraform.tfvars` in terraform folder (look at `terraform.tfvars.example`)
+2. Create `terraform.tfvars` in the `terraform/` directory (look at `terraform.tfvars.example`).
 
-3. Load the environmental variables:
+3. Create `backend.hcl` in the `terraform/` directory (look at `backend.hcl.example`).
+
+`backend.hcl` is used to specify the name of the bucket that Terraform will create to hold its state. This is done in the following line:
+```
+bucket  = "<your_tf_state_bucket>"
+```
+Where `<your_tf_state_bucket>` is a globally unique bucket name.
+
+4. Load the environmental variables:
 ```
 source .env
 ```
 
-4. Initialise terraform:
+5. Initialise terraform:
 ```
 make tf-init 
 ```
 
-5. Configure / set initial variables:
+6. Configure / set initial variables:
 ```
 make config
 ```
 
-6. Preview the configuration values:
+7. Preview the configuration values:
 ```
 make config-ls
 ```
 
-7. Authenticate GCP service account:
+8. Authenticate GCP service account:
 ```
 make gcloud-auth
 ```
 
-8. Create Cluster (type 'yes' when prompted), this step might take a long time:
+9. Create Cluster (type 'yes' when prompted), this step might take a long time:
 ```
 make tf-apply
 ```
@@ -97,71 +103,70 @@ This step will create buckets based off these environment variables, so make sur
 
 `ENVIRONMENT_TAG` will also determine which sub-directory of `GNOMAD_DEPLOYMENTS_PROJECT_PATH` Terraform will use for configuration, so this is the directory where you specify the amount of resources (such as storage) that the cluster has.
 
-9. Configure Kubernetes:
+10. Configure Kubernetes:
 ```
 make kube-config
 ```
 
-10. Prepare ES cluster master nodes:
+11. Prepare ES cluster master nodes:
 ```
 make eck-create
 make eck-apply
 ```
 
-11. Wait a bit for nodes to start, then check if running:
+12. Wait a bit for nodes to start, then check if running:
 ```
 make eck-check
 ```
 
-12. Create ES server (more details [here](https://github.com/broadinstitute/gnomad-deployments/tree/main/elasticsearch)):
-
+13. Create ES server (more details [here](https://github.com/broadinstitute/gnomad-deployments/tree/main/elasticsearch)):
 ```
 make elastic-create
 ```
 
-13. Create Redis server
+14. Create Redis server:
 ```
 make redis-create
 ```
 
-14. Wait a bit for ES disks to be created, then forward ES port so we can talk to it:
+15. Wait a bit for ES disks to be created, then forward ES port so we can talk to it:
 ```
 make forward-es-http
 ```
 
-15. Store ES password for later use:
+16. Store ES password for later use:
 ```
 export ELASTICSEARCH_PASSWORD=$(make -s es-secret-get)
 make es-secret-create
 ```
 
-16. Create '`browser/build.env`' in the gnomad-browser location and provide gnomAD (OurDNA Browser) API url:
+17. Create '`browser/build.env`' in the gnomad-browser location and provide gnomAD (OurDNA Browser) API url:
 
 ```
 echo 'GNOMAD_API_URL="https://ourdna.populationgenomics.org.au/api"' > $GNOMAD_PROJECT_PATH/browser/build.env
 ```
 
-17. Build all components:
+18. Build all components:
 ```
 make docker
 ```
 
-18.  Create new deployment:
+19.  Create new deployment:
 ```
 make deploy-create
 ```
 
-19. Deploy:
+20. Deploy:
 ```
 make deploy-apply
 ```
 
-20. Preview all deployments:
+21. Preview all deployments:
 ```
 make deployments-list
 ```
 
-21. Setup Ingress (TODO get static IP address working).
+22. Setup Ingress (TODO get static IP address working).
 
 This requires an external IP address (VPC Network / IP Addresses in the Google Cloud console) that corresponds to the name given by `kubernetes.io/ingress.global-static-ip-name` in `$(GNOMAD_PROJECT_PATH)/deploy/manifests/ingress/$(ENVIRONMENT_TAG)/gnomad.ingress.yaml`.
 
@@ -172,12 +177,12 @@ Once these are taken care of, run the following command:
 make ingress-apply
 ```
 
-22. **TODO** fix this one - different for DEV and PRD. Check the status of the Ingress resource:
+23. **TODO** fix this one - different for DEV and PRD. Check the status of the Ingress resource:
 ```
 make ingress-describe
 ```
 
-22. Wait for up to 5 minutes, then check that the IP address has been allocated:
+24. Wait for up to 5 minutes, then check that the IP address has been allocated:
 ```
 make ingress-get
 ```
