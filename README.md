@@ -239,3 +239,142 @@ make tf-destroy
 ```
 
 - Check for any VM disks, which might be still present, esp. created by ES-create terraform
+
+
+## Shutdown / Restart ES only to keep the dev costs down.
+
+Take a GCS snapshot, keep the PDs, scale the ES node pool to 0. Belt-and-braces: snapshot is your durable backup, PDs give fast restore.
+
+- Firstly we need to change the PVC to be Retain (not Delete, default)
+
+```
+kubectl get pv -o custom-columns=\
+NAME:.metadata.name,\
+RECLAIM:.spec.persistentVolumeReclaimPolicy,\
+CLAIM:.spec.claimRef.name,\
+NS:.spec.claimRef.namespace
+```
+
+If it shows `Retain` in RECLAIM, then skip the next step:
+
+- Patch PVC to retain so when we shutdown all the nodes disk won't be deleted:
+
+```
+kubectl get pv -o name | xargs -I{} \
+  kubectl patch {} --type=merge \
+    -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+```
+
+Verify if patched:
+
+```
+kubectl get pv -o custom-columns=\
+NAME:.metadata.name,\
+RECLAIM:.spec.persistentVolumeReclaimPolicy,\
+CLAIM:.spec.claimRef.name,\
+NS:.spec.claimRef.namespace
+```
+
+
+- Snapshot to GCS (insurance)
+```
+export ELASTICSEARCH_PASSWORD=$(make -s es-secret-get)
+export ES_MASTER_NODE=<pod-name>
+make es-start-backup
+make es-ls-backups              # confirm it landed
+```
+
+- Scale the Elasticsearch resource to 0 (clean shutdown, PVCs retained)
+
+```
+# Find the actual Elasticsearch CR name and namespace
+kubectl get elasticsearch -A
+# or shortcut:
+kubectl get es -A
+That'll give you something like:
+
+
+NAMESPACE   NAME         HEALTH   NODES   VERSION   PHASE   AGE
+default     gnomad    green    5       8.x.x     Ready   100d
+Then scale with the real name + namespace:
+
+
+kubectl -n <namespace> scale elasticsearch <name> --replicas=0
+
+# e.g.: kubectl -n default scale elasticsearch gnomad --replicas=0
+```
+
+- Resize the es-data node pool to 0
+
+```
+gcloud container clusters resize "$CLUSTER_NAME-$ENVIRONMENT_TAG" \
+    --node-pool=es-data --num-nodes=0 --zone=$TF_VAR_default_resource_zone
+```
+
+- We might need to unblock the drain if GKE is stucked for more than 10-15 minutes:
+
+```
+# check if resize is still running 
+gcloud container operations list --filter="status=RUNNING"
+```
+
+Confirm it's a PDB
+```
+kubectl get pdb -A
+kubectl -n <es-ns> describe pdb
+```
+
+You'll likely see something like elasticsearch.k8s.elastic.co PDB with ALLOWED DISRUPTIONS: 0.
+
+Also check what's still on the node:
+```
+kubectl get nodes -l cloud.google.com/gke-nodepool=es-data
+NODE=$(kubectl get nodes -l cloud.google.com/gke-nodepool=es-data -o name | head -1)
+kubectl describe $NODE | tail -40    # look for drain/eviction events
+```
+
+Now unblock teh drain:
+```
+kubectl -n default get pdb
+kubectl -n default delete pdb gnomad-es-default    # or whatever name shows up
+```
+
+After unblocking - check if still running:
+
+```
+gcloud compute instances list --filter="name~gke-ourdna-dev-es-data"
+```
+
+### Verify data is safe
+
+- PVCs should all be Bound
+```
+kubectl -n default get pvc | grep elasticsearch
+```
+
+- PVs should still exist with RECLAIMPOLICY=Retain
+
+```
+kubectl get pv -o custom-columns=\
+NAME:.metadata.name,\
+RECLAIM:.spec.persistentVolumeReclaimPolicy,\
+STATUS:.status.phase,\
+CLAIM:.spec.claimRef.name
+```
+
+- Underlying GCE PDs
+
+```
+gcloud compute disks list --filter="name~pvc-" --format="table(name,sizeGb,type,zone.basename())"
+```
+
+You should see 3 ES PVCs Bound, 3 ES PVs with Retain+Bound, and 3 pvc-* disks on GCE.
+
+
+### Bring-back ES from shutdown
+
+```
+gcloud container clusters resize "$CLUSTER_NAME-$ENVIRONMENT_TAG" --node-pool=es-data --num-nodes=5 --zone=$TF_VAR_default_resource_zone
+```
+
+
