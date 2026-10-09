@@ -32,11 +32,12 @@ GOOGLE_APPLICATION_CREDENTIALS:=$(SERVICE_ACCOUNT_PKEY)
 # loading ES specific, for DEV 1 is enough
 LOAD_NODE_POOL_SIZE:=$(LOAD_NODE_POOL_SIZE)
 ES_MASTER_NODE:=$(ES_MASTER_NODE)
+ES_BACKUP_BUCKET:=$(ES_BACKUP_BUCKET)
 
 
 ### Stand up infra
 tf-init: ## Initial terraform
-	terraform -chdir=./terraform init
+	terraform -chdir=./terraform init -backend-config=backend.hcl
 
 tf-plan: ## Show plan
 	terraform -chdir=./terraform plan
@@ -97,7 +98,7 @@ forward-es-http:
 
 # Cannot set env var in parent shell from within make
 es-secret-get:
-	$(GNOMAD_PROJECT_PATH)/deployctl elasticsearch get-password --cluster-name=$(CLUSTER_NAME)
+	$(GNOMAD_PROJECT_PATH)/deployctl elasticsearch get-password
 
 # bash command to set env var with password
 # `-s` is silent (e.g. doesn't print recipe)
@@ -163,7 +164,7 @@ ingress-get:
 ### Clean up deployment ###
 ingress-delete:
 	# kubectl delete ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE)
-	kubectl delete ingress gnomad-ingress-demo-$(PROJECT_ID)-$(DEPLOYMENT_STATE) 
+	kubectl delete ingress gnomad-ingress 
 
 deployments-local-clean:
 	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl deployments clean $(PROJECT_ID)-$(DEPLOYMENT_STATE)
@@ -194,13 +195,13 @@ es-setup-backup:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
-		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true }}'
+		--data '{"type": "gcs", "settings": { "bucket": "$(ES_BACKUP_BUCKET)", "client": "default", "compress": true }}'
 
 es-setup-backup-readonly:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" \
 		-XPUT "localhost:9200/_snapshot/backups" \
 		-H 'Content-Type: application/json' \
-		--data '{"type": "gcs", "settings": { "bucket": "ourdna-dev-elastic-snaps", "client": "default", "compress": true, "readonly": true }}'
+		--data '{"type": "gcs", "settings": { "bucket": "$(ES_BACKUP_BUCKET)", "client": "default", "compress": true, "readonly": true }}'
 
 
 # This does not remove the content of the bucket, only deregister from the ES
@@ -240,7 +241,7 @@ es-del-backup:
 # I'm assuming DATASET refers to a `.ht` file in the datapipeline bucket
 # run with `make DATASET=gnomad_v2_exome_coverage es-load`
 es-load:
-	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --cluster-name=$(CLUSTER_NAME)-$(ENVIRONMENT_TAG) --secret=gnomad-elasticsearch-password
+	pushd $(GNOMAD_PROJECT_PATH) && ./deployctl elasticsearch load-datasets --dataproc-cluster es $(DATASET) --secret=gnomad-elasticsearch-password
 
 es-show-info:
 	kubectl exec --stdin --tty $(ES_MASTER_NODE) -- curl -u "elastic:$$ELASTICSEARCH_PASSWORD" -XGET http://localhost:9200
