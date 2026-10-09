@@ -325,7 +325,7 @@ CLAIM:.spec.claimRef.name,\
 NS:.spec.claimRef.namespace
 ```
 
-If it shows `Retain` in RECLAIM, then skip the next step:
+If it shows `Retain` in RECLAIM, then skip the next step and go to [Snapshot to GCS (insurance)](#snapshot-to-gcs-insurance):
 
 - Patch PVC to retain so when we shutdown all the nodes disk won't be deleted:
 
@@ -346,6 +346,7 @@ NS:.spec.claimRef.namespace
 ```
 
 
+<a id="snapshot-to-gcs-insurance"></a>
 - Snapshot to GCS (insurance)
 ```
 export ELASTICSEARCH_PASSWORD=$(make -s es-secret-get)
@@ -361,16 +362,18 @@ make es-ls-backups              # confirm it landed
 kubectl get elasticsearch -A
 # or shortcut:
 kubectl get es -A
+```
+
 That'll give you something like:
-
-
+```
 NAMESPACE   NAME         HEALTH   NODES   VERSION   PHASE   AGE
 default     gnomad    green    5       8.x.x     Ready   100d
+```
+
 Then scale with the real name + namespace:
 
-
+```
 kubectl -n <namespace> scale elasticsearch <name> --replicas=0
-
 # e.g.: kubectl -n default scale elasticsearch gnomad --replicas=0
 ```
 
@@ -403,7 +406,7 @@ NODE=$(kubectl get nodes -l cloud.google.com/gke-nodepool=es-data -o name | head
 kubectl describe $NODE | tail -40    # look for drain/eviction events
 ```
 
-Now unblock teh drain:
+Now unblock the drain:
 ```
 kubectl -n default get pdb
 kubectl -n default delete pdb gnomad-es-default    # or whatever name shows up
