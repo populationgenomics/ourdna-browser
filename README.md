@@ -280,7 +280,35 @@ Once that's complete, run the following command to destroy the GCP cluster:
 make tf-destroy
 ```
 
-- Check for any VM disks, which might be still present, esp. created by ES-create terraform
+4. Check for any VM disks, which might be still present, esp. created by ES-create terraform
+
+## Backing up
+
+### Creating a backup
+To create an ES backup, first create an ES repository that links to your bucket found at `ES_BACKUP_BUCKET`:
+```
+make es-setup-backup
+```
+Then create the backup:
+```
+make es-start-backup
+```
+
+### Restoring a backup
+List the snapshots that are available for restoring a backup with:
+```
+make es-ls-backups
+```
+
+To determine what indices to restore, describe a snapshot with:
+```
+make es-backup-details SNAPSHOT_NAME=<snapshot name>
+```
+
+And then restore a specific index with:
+```
+make es-restore-idx SNAPSHOT_NAME=<snapshot name> INDEX_NAME=<index name>
+```
 
 
 ## Shutdown / Restart ES only to keep the dev costs down.
@@ -417,34 +445,4 @@ You should see 3 ES PVCs Bound, 3 ES PVs with Retain+Bound, and 3 pvc-* disks on
 
 ```
 gcloud container clusters resize "$CLUSTER_NAME-$ENVIRONMENT_TAG" --node-pool=es-data --num-nodes=5 --zone=$TF_VAR_default_resource_zone
-```
-
-
-4. Check for any VM disks, which might be still present, esp. created by ES-create terraform
-
-## Backing up
-### Creating a backup
-To create an ES backup, first create an ES repository that links to your bucket found at `ES_BACKUP_BUCKET`:
-```
-make es-setup-backup
-```
-Then create the backup:
-```
-make es-start-backup
-```
-
-### Restoring a backup
-List the snapshots that are available for restoring a backup with:
-```
-make es-ls-backups
-```
-
-To determine what indices to restore, describe a snapshot with:
-```
-make es-backup-details SNAPSHOT_NAME=<snapshot name>
-```
-
-And then restore a specific index with:
-```
-make es-restore-idx SNAPSHOT_NAME=<snapshot name> INDEX_NAME=<index name>
 ```
